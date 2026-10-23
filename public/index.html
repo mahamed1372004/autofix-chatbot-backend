@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>عربيتك عطلانة؟</title>
+<style>
+  :root {
+    --bg: #1b1a17;
+    --panel: #242320;
+    --panel-2: #2c2b27;
+    --accent: #f2a341;
+    --accent-dim: #8a5a1f;
+    --danger: #e2543b;
+    --safe: #5fae7d;
+    --text: #f3efe7;
+    --text-dim: #a8a29a;
+    --bubble-user: #3a3733;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Tahoma', 'Segoe UI', sans-serif;
+  }
+  body { display: flex; flex-direction: column; }
+
+  header {
+    padding: 18px 16px 14px;
+    border-bottom: 1px solid #35322c;
+    display: flex; align-items: center; gap: 10px;
+  }
+  header .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--accent); box-shadow: 0 0 8px var(--accent);
+  }
+  header h1 {
+    font-size: 17px; margin: 0; font-weight: 700; letter-spacing: 0.2px;
+  }
+  header p { margin: 2px 0 0; font-size: 12px; color: var(--text-dim); }
+
+  #chat {
+    flex: 1; overflow-y: auto; padding: 16px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+
+  .msg {
+    max-width: 82%;
+    padding: 11px 14px;
+    border-radius: var(--radius);
+    font-size: 14.5px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    animation: rise 0.18s ease-out;
+  }
+  @keyframes rise { from { opacity: 0; transform: translateY(6px);} to {opacity:1; transform: translateY(0);} }
+
+  .msg.user {
+    align-self: flex-end;
+    background: var(--bubble-user);
+    border-bottom-left-radius: 4px;
+  }
+  .msg.bot {
+    align-self: flex-start;
+    background: var(--panel);
+    border: 1px solid #38352e;
+    border-bottom-right-radius: 4px;
+  }
+  .msg.bot.dangerous { border-color: var(--danger); }
+  .msg.bot.safe { border-color: var(--safe); }
+
+  .msg .tag {
+    display: inline-block;
+    font-size: 10.5px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-bottom: 6px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+  .tag.dangerous { background: rgba(226,84,59,0.15); color: var(--danger); }
+  .tag.safe { background: rgba(95,174,125,0.15); color: var(--safe); }
+  .tag.info { background: rgba(242,163,65,0.15); color: var(--accent); }
+
+  .garage {
+    background: var(--panel-2);
+    border: 1px solid #3a372f;
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin-top: 8px;
+    font-size: 13px;
+  }
+  .garage b { color: var(--accent); font-size: 13.5px; }
+  .garage a { color: var(--accent); text-decoration: none; }
+  .garage .links { display: flex; gap: 14px; margin-top: 4px; flex-wrap: wrap; }
+  .garage .addr { color: var(--text-dim); font-size: 12px; margin-top: 2px; }
+
+  .thumb {
+    max-width: 160px; border-radius: 10px; margin-top: 6px; display: block;
+  }
+
+  #typing {
+    align-self: flex-start; padding: 10px 14px; color: var(--text-dim); font-size: 13px;
+    display: none;
+  }
+
+  footer {
+    padding: 10px 12px calc(12px + env(safe-area-inset-bottom));
+    border-top: 1px solid #35322c;
+    background: var(--bg);
+  }
+  #preview-row { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+  .preview-chip {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--panel); border: 1px solid #3a372f;
+    padding: 5px 10px; border-radius: 20px; font-size: 12px; color: var(--text-dim);
+  }
+  .preview-chip button {
+    background: none; border: none; color: var(--danger); cursor: pointer; font-size: 13px; padding: 0;
+  }
+
+  #input-row {
+    display: flex; align-items: flex-end; gap: 8px;
+  }
+  #input-row textarea {
+    flex: 1; resize: none; max-height: 100px; min-height: 42px;
+    background: var(--panel); color: var(--text);
+    border: 1px solid #3a372f; border-radius: 20px;
+    padding: 11px 14px; font-size: 14.5px; font-family: inherit;
+    outline: none;
+  }
+  #input-row textarea:focus { border-color: var(--accent); }
+
+  .icon-btn {
+    width: 42px; height: 42px; border-radius: 50%;
+    border: 1px solid #3a372f; background: var(--panel);
+    color: var(--text); font-size: 18px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0;
+  }
+  .icon-btn.active { background: var(--danger); border-color: var(--danger); color: #fff; }
+  #send-btn {
+    background: var(--accent); border-color: var(--accent); color: #1b1a17; font-weight: 700;
+  }
+  .icon-btn:active { transform: scale(0.94); }
+
+  .retry-btn {
+    display: inline-block; margin-top: 10px;
+    background: var(--accent); color: #1b1a17; border: none;
+    padding: 8px 16px; border-radius: 20px;
+    font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+  }
+  .retry-btn:disabled { opacity: 0.5; }
+
+  .sos-btn {
+    margin-inline-start: auto;
+    background: rgba(226,84,59,0.15); color: var(--danger);
+    border: 1px solid var(--danger); border-radius: 20px;
+    padding: 7px 14px; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+  }
+  .emergency-card {
+    background: var(--panel-2); border: 1px solid var(--danger);
+    border-radius: 12px; padding: 10px 12px; margin-top: 10px; font-size: 13px;
+  }
+  .emergency-card .title { color: var(--danger); font-weight: 700; margin-bottom: 6px; }
+  .num-row {
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    padding: 8px 0; border-bottom: 1px solid #3a372f;
+  }
+  .num-row:last-child { border-bottom: none; }
+  .num-row .label { font-size: 13.5px; }
+  .num-row .hint { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+  .num-row a {
+    background: var(--accent); color: #1b1a17; text-decoration: none;
+    padding: 7px 14px; border-radius: 18px; font-weight: 700; font-size: 13.5px;
+    direction: ltr; white-space: nowrap; flex-shrink: 0;
+  }
+  #sos-overlay {
+    display: none; position: fixed; inset: 0; z-index: 50;
+    background: rgba(0,0,0,0.65); align-items: flex-end; justify-content: center;
+  }
+  #sos-overlay.open { display: flex; }
+  #sos-sheet {
+    background: var(--panel); width: 100%; max-width: 520px; max-height: 85%;
+    overflow-y: auto; border-radius: 20px 20px 0 0; padding: 16px 16px calc(18px + env(safe-area-inset-bottom));
+    border-top: 2px solid var(--danger);
+  }
+  #sos-sheet h2 { margin: 0 0 4px; font-size: 17px; color: var(--danger); }
+  #sos-sheet .sub { font-size: 12px; color: var(--text-dim); margin-bottom: 10px; }
+  #sos-close {
+    width: 100%; margin-top: 12px; padding: 11px; border-radius: 14px;
+    background: var(--panel-2); color: var(--text); border: 1px solid #3a372f;
+    font-family: inherit; font-size: 14px; cursor: pointer;
+  }
+
+  .menu-btn {
+    background: var(--panel); color: var(--text); border: 1px solid #3a372f;
+    width: 38px; height: 38px; border-radius: 10px; font-size: 18px; cursor: pointer; flex-shrink: 0;
+  }
+  #drawer-overlay {
+    display: none; position: fixed; inset: 0; z-index: 40;
+    background: rgba(0,0,0,0.6);
+  }
+  #drawer-overlay.open { display: block; }
+  #drawer {
+    position: absolute; top: 0; bottom: 0; right: 0; width: min(84%, 340px);
+    background: var(--panel); border-left: 1px solid #3a372f;
+    display: flex; flex-direction: column;
+    padding-top: env(safe-area-inset-top);
+  }
+  #drawer h2 { margin: 0; padding: 16px; font-size: 16px; border-bottom: 1px solid #35322c; }
+  #new-chat-btn {
+    margin: 12px; padding: 12px; border-radius: 14px; border: none;
+    background: var(--accent); color: #1b1a17; font-family: inherit;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+  }
+  #conv-list { flex: 1; overflow-y: auto; padding: 0 12px 12px; }
+  .conv-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 11px 12px; margin-bottom: 8px; border-radius: 12px;
+    background: var(--panel-2); border: 1px solid #38352e; cursor: pointer;
+  }
+  .conv-item.active { border-color: var(--accent); }
+  .conv-item .info { flex: 1; min-width: 0; }
+  .conv-item .t { font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .conv-item .d { font-size: 11px; color: var(--text-dim); margin-top: 3px; }
+  .conv-item .del {
+    background: none; border: none; color: var(--danger); font-size: 15px; cursor: pointer; padding: 4px;
+  }
+  .conv-empty { color: var(--text-dim); font-size: 13px; text-align: center; padding: 20px 0; }
+
+  #status-bar {
+    font-size: 11px; color: var(--text-dim); text-align: center; padding: 4px 0 8px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <button class="menu-btn" id="menu-btn" title="المحادثات">☰</button>
+  <div class="dot"></div>
+  <div>
+    <h1>عربيتك عطلانة؟</h1>
+    <p>وصفلي المشكلة كتابة، صوت، أو صورة</p>
+  </div>
+  <button class="sos-btn" id="sos-btn">🚨 طوارئ</button>
+</header>
+
+<div id="sos-overlay">
+  <div id="sos-sheet">
+    <h2>🚨 أرقام الطوارئ والإغاثة</h2>
+    <div class="sub">دوس على الرقم عشان تتصل مباشرة</div>
+    <div id="sos-list"></div>
+    <button id="sos-close">إغلاق</button>
+  </div>
+</div>
+
+<div id="drawer-overlay">
+  <div id="drawer">
+    <h2>💬 محادثاتك السابقة</h2>
+    <button id="new-chat-btn">➕ محادثة جديدة</button>
+    <div id="conv-list"></div>
+  </div>
+</div>
+
+<div id="chat"></div>
+<div id="typing">بيكتب...</div>
+
+<footer>
+  <div id="preview-row"></div>
+  <div id="input-row">
+    <button class="icon-btn" id="img-btn" title="ابعت صورة">📷</button>
+    <button class="icon-btn" id="mic-btn" title="سجّل صوت">🎤</button>
+    <textarea id="text-input" rows="1" placeholder="اكتب وصف العطل هنا..."></textarea>
+    <button class="icon-btn" id="send-btn" title="ابعت">➤</button>
+  </div>
+  <div id="status-bar"></div>
+</footer>
+
+<!-- من غير capture: على الموبايل المستخدم يقدر يختار يصوّر أو ياخد صورة من المعرض -->
+<input type="file" id="image-input" accept="image/*" style="display:none" />
+
+<script>
+const API_BASE = "";
+const rand = () => Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6);
+
+// هوية ثابتة للمستخدم على الجهاز ده (في التطبيق الحقيقي بتيجي من تسجيل الدخول)
+function getUserId() {
+  try {
+    let id = localStorage.getItem("carbot_user_id");
+    if (!id) { id = "user_" + rand(); localStorage.setItem("carbot_user_id", id); }
+    return id;
+  } catch (e) {
+    return "user_" + rand(); // لو التخزين مش متاح، هوية مؤقتة للجلسة دي بس
+  }
+}
+const userId = getUserId();
+let sessionId = "conv_" + rand(); // معرّف المحادثة الحالية
+
+let pendingImage = null;
+let mediaRecorder = null;
+let audioChunks = [];
+let recording = false;
+let userCoords = null;
+
+const chatEl = document.getElementById("chat");
+const typingEl = document.getElementById("typing");
+const statusEl = document.getElementById("status-bar");
+const previewRow = document.getElementById("preview-row");
+const textInput = document.getElementById("text-input");
+
+// المتصفح بيمنع الموقع والميكروفون على http (زي http://192.168.1.5:3000 اللي في الفيديو)،
+// وبيشتغلوا بس على https أو localhost
+const SECURE_HINT = "الموقع والميكروفون مش بيشتغلوا غير على رابط https (زي رابط Render) أو localhost.";
+
+if (navigator.geolocation && window.isSecureContext) {
+  navigator.geolocation.getCurrentPosition(
+    (pos) => { userCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude }; },
+    () => {},
+    { timeout: 8000 }
+  );
+}
+
+function addBubble(role, text, riskLevel) {
+  const div = document.createElement("div");
+  div.className = "msg " + role + (riskLevel ? " " + riskLevel : "");
+  if (role === "bot" && riskLevel) {
+    const tagText = riskLevel === "dangerous" ? "⚠ خطير" : riskLevel === "safe" ? "✓ آمن" : "معلومة";
+    const tag = document.createElement("span");
+    tag.className = "tag " + riskLevel;
+    tag.textContent = tagText;
+    div.appendChild(tag);
+    div.appendChild(document.createElement("br"));
+  }
+  div.appendChild(document.createTextNode(text));
+  chatEl.appendChild(div);
+  chatEl.scrollTop = chatEl.scrollHeight;
+  return div;
+}
+
+// كروت الورش والأوناش بتتبني بـ textContent مش innerHTML:
+// الأسماء والعناوين جاية من Google Places / قاعدة البيانات، ولو فيها HTML كانت هتتنفذ في الصفحة
+function placeCard(p) {
+  const card = document.createElement("div");
+  card.className = "garage";
+  const name = document.createElement("b");
+  name.textContent = p.name || "";
+  card.appendChild(name);
+
+  const details = [p.address, p.distanceKm != null ? `على بعد ${p.distanceKm} كم` : "", p.rating ? `⭐ ${p.rating}` : ""]
+    .filter(Boolean).join(" · ");
+  if (details) {
+    const addr = document.createElement("div");
+    addr.className = "addr";
+    addr.textContent = details;
+    card.appendChild(addr);
+  }
+
+  const links = document.createElement("div");
+  links.className = "links";
+  const phone = p.phone && p.phone !== "غير متاح" ? String(p.phone).replace(/[^\d+]/g, "") : "";
+  if (phone) {
+    const a = document.createElement("a");
+    a.href = "tel:" + phone;
+    a.dir = "ltr"; // من غيرها الرقم بيظهر "201...+" في الصفحة العربي
+    a.textContent = "📞 " + p.phone;
+    links.appendChild(a);
+  } else {
+    const span = document.createElement("span");
+    span.style.color = "var(--text-dim)";
+    span.textContent = "رقم غير متاح";
+    links.appendChild(span);
+  }
+  if (p.mapsUrl) {
+    const m = document.createElement("a");
+    m.href = p.mapsUrl;
+    m.target = "_blank";
+    m.rel = "noopener";
+    m.textContent = "📍 الخريطة";
+    links.appendChild(m);
+  }
+  card.appendChild(links);
+  return card;
+}
+
+function addPlaces(places, emptyText) {
+  const wrap = document.createElement("div");
+  wrap.className = "msg bot";
+  if (!places || places.length === 0) {
+    wrap.textContent = emptyText;
+  } else {
+    places.forEach((p) => wrap.appendChild(placeCard(p)));
+  }
+  chatEl.appendChild(wrap);
+  chatEl.scrollTop = chatEl.scrollHeight;
+}
+const addGarages = (garages) => addPlaces(garages, "معلش، مش لاقي ورش قريبة دلوقتي.");
+const addTowTrucks = (trucks) => addPlaces(trucks, "معلش، مش لاقي أوناش قريبة دلوقتي.");
+
+function addImagePreviewInChat(file) {
+  const url = URL.createObjectURL(file);
+  const div = document.createElement("div");
+  div.className = "msg user";
+  const img = document.createElement("img");
+  img.src = url; img.className = "thumb";
+  div.appendChild(img);
+  chatEl.appendChild(div);
+  chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+function addErrorWithRetry(text, retryFn) {
+  const div = addBubble("bot", text, null);
+  const btn = document.createElement("button");
+  btn.className = "retry-btn";
+  btn.textContent = "🔄 إعادة المحاولة";
+  btn.onclick = () => {
+    btn.disabled = true;
+    div.remove();
+    retryFn();
+  };
+  div.appendChild(document.createElement("br"));
+  div.appendChild(btn);
+  chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+// ==== أرقام الطوارئ والإغاثة في مصر (من مصادر إخبارية رسمية) ====
+const EMERGENCY_NUMBERS = [
+  { icon: "🛣️", label: "نجدة وإغاثة الطرق السريعة (طوارئ المرور / ونش المرور)", hint: "للأعطال والحوادث على الطرق السريعة - 24 ساعة", number: "01221110000", primary: true },
+  { icon: "🚗", label: "شرطة المرور", hint: "رقم موحد", number: "128", primary: true },
+  { icon: "🚑", label: "الإسعاف", hint: "لو مش بيرد جرب النجدة 122", number: "123", primary: true },
+  { icon: "👮", label: "شرطة النجدة", hint: "للبلاغات العاجلة والحوادث", number: "122", primary: true },
+  { icon: "🚒", label: "الحماية المدنية والمطافئ", hint: "للحرائق والإنقاذ", number: "180" },
+  { icon: "🆘", label: "رقم الطوارئ الموحد", hint: "من أي موبايل أو خط أرضي", number: "112" },
+  { icon: "🛠️", label: "الهيئة العامة للطرق والكباري", hint: "بلاغات وشكاوى سلامة الطرق (مش للونش)", number: "19487" },
+];
+
+function numRowHTML(n) {
+  return `<div class="num-row">
+    <div><div class="label">${n.icon} ${n.label}</div><div class="hint">${n.hint}</div></div>
+    <a href="tel:${n.number}">📞 ${n.number}</a>
+  </div>`;
+}
+
+function openSOS() {
+  document.getElementById("sos-list").innerHTML = EMERGENCY_NUMBERS.map(numRowHTML).join("");
+  document.getElementById("sos-overlay").classList.add("open");
+}
+function closeSOS() {
+  document.getElementById("sos-overlay").classList.remove("open");
+}
+document.getElementById("sos-btn").addEventListener("click", openSOS);
+document.getElementById("sos-close").addEventListener("click", closeSOS);
+document.getElementById("sos-overlay").addEventListener("click", (e) => {
+  if (e.target.id === "sos-overlay") closeSOS();
+});
+
+let emergencyShown = false;
+function addEmergencyCard() {
+  const wrap = document.createElement("div");
+  wrap.className = "msg bot";
+  const card = document.createElement("div");
+  card.className = "emergency-card";
+  card.innerHTML =
+    `<div class="title">🚨 لو محتاج مساعدة فورية أو ونش</div>` +
+    EMERGENCY_NUMBERS.filter((n) => n.primary).map(numRowHTML).join("") +
+    `<button class="retry-btn" id="sos-more-btn">كل أرقام الطوارئ</button>`;
+  wrap.appendChild(card);
+  chatEl.appendChild(wrap);
+  card.querySelector("#sos-more-btn").removeAttribute("id");
+  card.querySelector(".retry-btn").onclick = openSOS;
+  chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+async function sendMessage(messageText, opts) {
+  opts = opts || {};
+  const formData = new FormData();
+  formData.append("userId", userId);
+  formData.append("sessionId", sessionId);
+  if (opts.silent) formData.append("silent", "1");
+  if (messageText) formData.append("message", messageText);
+  if (opts.image) formData.append("image", opts.image);
+  if (opts.audio) {
+    const ext = /mp4|aac/.test(opts.audio.type) ? "m4a" : /ogg/.test(opts.audio.type) ? "ogg" : "webm";
+    formData.append("audio", opts.audio, "voice." + ext);
+  }
+  if (userCoords) {
+    formData.append("latitude", userCoords.lat);
+    formData.append("longitude", userCoords.lng);
+  }
+
+  typingEl.style.display = "block";
+  chatEl.scrollTop = chatEl.scrollHeight;
+
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 60000); // لو الرد اتأخر أكتر من دقيقة نقطع
+    let res;
+    try {
+      res = await fetch(API_BASE + "/diagnose", { method: "POST", body: formData, signal: controller.signal });
+    } finally {
+      clearTimeout(timer);
+    }
+    const data = await res.json();
+    typingEl.style.display = "none";
+
+    if (data.error) {
+      if (data.retryable) {
+        addErrorWithRetry(data.error, () => sendMessage(messageText, opts));
+      } else {
+        addBubble("bot", "حصل مشكلة: " + data.error, null);
+      }
+      return;
+    }
+
+    if (data.transcribed_text) {
+      const note = document.createElement("div");
+      note.style.cssText = "align-self:flex-start;font-size:11px;color:var(--text-dim);padding:0 6px;";
+      note.textContent = "🎤 سمعت: " + data.transcribed_text;
+      chatEl.appendChild(note);
+    }
+
+    addBubble("bot", data.message, data.risk_level);
+
+    if (data.risk_level === "dangerous" && !emergencyShown) {
+      emergencyShown = true;
+      addEmergencyCard();
+    }
+
+    if (data.location_needed) {
+      statusEl.textContent = "محتاج إذن الموقع عشان أقدر أدورلك على ورش — اسمح له من إعدادات المتصفح.";
+      if (!window.isSecureContext) {
+        statusEl.textContent = SECURE_HINT;
+      } else if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            userCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            statusEl.textContent = "تمام، لقيت موقعك، بدور على أقرب ورش...";
+            // نبعت تلقائيًا تاني عشان السيرفر يكمل البحث عن الورش بالإحداثيات الجديدة
+            sendMessage("تم تحديد الموقع", { silent: true });
+          },
+          () => {
+            statusEl.textContent = "مقدرش أوصل لموقعك. فعّل خدمة الموقع (GPS) وسمح للمتصفح بالوصول للموقع من إعدادات الجهاز، وبعدين اكتب أي حاجة وابعتها.";
+          },
+          { timeout: 8000 }
+        );
+      }
+    } else {
+      statusEl.textContent = "";
+    }
+
+    if (data.nearby_garages && !data.location_needed) {
+      addGarages(data.nearby_garages);
+    }
+    if (data.nearby_tow_trucks) {
+      addTowTrucks(data.nearby_tow_trucks);
+    }
+  } catch (err) {
+    typingEl.style.display = "none";
+    addErrorWithRetry("مقدرش أوصل للسيرفر دلوقتي. اتأكد من الاتصال بالإنترنت وجرّب تاني.", () => sendMessage(messageText, opts));
+    console.error(err);
+  }
+}
+
+document.getElementById("send-btn").addEventListener("click", () => {
+  const text = textInput.value.trim();
+  if (!text && !pendingImage) return;
+
+  if (text) addBubble("user", text, null);
+  if (pendingImage) addImagePreviewInChat(pendingImage);
+
+  sendMessage(text, { image: pendingImage });
+  textInput.value = "";
+  pendingImage = null;
+  previewRow.innerHTML = "";
+});
+
+textInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    document.getElementById("send-btn").click();
+  }
+});
+
+document.getElementById("img-btn").addEventListener("click", () => {
+  document.getElementById("image-input").click();
+});
+document.getElementById("image-input").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  pendingImage = file;
+  previewRow.innerHTML = "";
+  const chip = document.createElement("div");
+  chip.className = "preview-chip";
+  chip.innerHTML = `📷 صورة جاهزة للإرسال <button>✕</button>`;
+  chip.querySelector("button").onclick = () => { pendingImage = null; previewRow.innerHTML = ""; };
+  previewRow.appendChild(chip);
+});
+
+document.getElementById("mic-btn").addEventListener("click", async () => {
+  const micBtn = document.getElementById("mic-btn");
+
+  if (!recording) {
+    if (!window.isSecureContext || !navigator.mediaDevices) {
+      statusEl.textContent = SECURE_HINT;
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+      audioChunks = [];
+      mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
+      mediaRecorder.onstop = () => {
+        // Safari/iPhone بيسجل audio/mp4 مش webm، فبناخد النوع الحقيقي من المسجّل
+        const type = (mediaRecorder.mimeType || "audio/webm").split(";")[0];
+        const audioBlob = new Blob(audioChunks, { type });
+        addBubble("user", "🎤 رسالة صوتية", null);
+        sendMessage(null, { audio: audioBlob });
+        stream.getTracks().forEach((t) => t.stop());
+      };
+      mediaRecorder.start();
+      recording = true;
+      micBtn.classList.add("active");
+      micBtn.textContent = "⏹";
+    } catch (err) {
+      statusEl.textContent = "محتاج إذن الميكروفون عشان تسجل صوت. لو بتفتح الموقع من IP الشبكة، لازم تفتحه عن طريق رابط HTTPS (زي ngrok) عشان المتصفح يسمح بالميكروفون.";
+    }
+  } else {
+    mediaRecorder.stop();
+    recording = false;
+    micBtn.classList.remove("active");
+    micBtn.textContent = "🎤";
+  }
+});
+
+// ==== المحادثات المحفوظة ====
+const GREETING = "أهلاً! وصفلي مشكلة عربيتك بالكتابة، الصوت، أو صورة، وهساعدك أشخصها خطوة بخطوة.";
+const DEFAULT_IMAGE_TEXT = "شايف الصورة دي، إيه المشكلة؟";
+
+function startNewConversation() {
+  sessionId = "conv_" + rand();
+  chatEl.innerHTML = "";
+  emergencyShown = false;
+  pendingImage = null;
+  previewRow.innerHTML = "";
+  statusEl.textContent = "";
+  addBubble("bot", GREETING, null);
+}
+
+function renderMessages(messages) {
+  chatEl.innerHTML = "";
+  emergencyShown = messages.some((m) => m.risk_level === "dangerous"); // زرار 🚨 متاح دايمًا
+  messages.forEach((m) => {
+    if (m.role === "user") {
+      let text = m.text || "";
+      if (m.hasImage) {
+        text = "📷 صورة مرفقة" + (text && text !== DEFAULT_IMAGE_TEXT ? "\n" + text : "");
+      } else if (m.viaAudio) {
+        text = "🎤 " + text;
+      }
+      addBubble("user", text, null);
+    } else {
+      if (m.transcribed_text) {
+        const note = document.createElement("div");
+        note.style.cssText = "align-self:flex-start;font-size:11px;color:var(--text-dim);padding:0 6px;";
+        note.textContent = "🎤 سمعت: " + m.transcribed_text;
+        chatEl.appendChild(note);
+      }
+      addBubble("bot", m.text || "", m.risk_level);
+      if (m.nearby_garages) addGarages(m.nearby_garages);
+      if (m.nearby_tow_trucks) addTowTrucks(m.nearby_tow_trucks);
+    }
+  });
+  chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+async function fetchConversations() {
+  const res = await fetch(API_BASE + "/api/conversations?userId=" + encodeURIComponent(userId));
+  const data = await res.json();
+  return data.conversations || [];
+}
+
+async function openConversation(id) {
+  try {
+    const res = await fetch(API_BASE + "/api/conversations/" + encodeURIComponent(id) + "?userId=" + encodeURIComponent(userId));
+    if (!res.ok) throw new Error("not found");
+    const data = await res.json();
+    sessionId = id;
+    pendingImage = null;
+    previewRow.innerHTML = "";
+    statusEl.textContent = "";
+    renderMessages(data.messages);
+    closeDrawer();
+  } catch (e) {
+    statusEl.textContent = "مقدرتش أفتح المحادثة دي، جرّب تاني.";
+  }
+}
+
+async function removeConversation(id) {
+  if (!confirm("متأكد إنك عايز تمسح المحادثة دي؟")) return;
+  try {
+    await fetch(API_BASE + "/api/conversations/" + encodeURIComponent(id) + "?userId=" + encodeURIComponent(userId), { method: "DELETE" });
+    if (id === sessionId) startNewConversation();
+    refreshDrawer();
+  } catch (e) {
+    statusEl.textContent = "مقدرتش أمسح المحادثة، جرّب تاني.";
+  }
+}
+
+async function refreshDrawer() {
+  const listEl = document.getElementById("conv-list");
+  listEl.innerHTML = '<div class="conv-empty">بحمّل...</div>';
+  try {
+    const convs = await fetchConversations();
+    listEl.innerHTML = "";
+    if (convs.length === 0) {
+      listEl.innerHTML = '<div class="conv-empty">مفيش محادثات محفوظة لسه</div>';
+      return;
+    }
+    convs.forEach((c) => {
+      const item = document.createElement("div");
+      item.className = "conv-item" + (c.id === sessionId ? " active" : "");
+      const info = document.createElement("div");
+      info.className = "info";
+      const t = document.createElement("div");
+      t.className = "t";
+      t.textContent = c.title;
+      const d = document.createElement("div");
+      d.className = "d";
+      d.textContent = new Date(c.updatedAt).toLocaleString("ar-EG", { dateStyle: "medium", timeStyle: "short" });
+      info.appendChild(t); info.appendChild(d);
+      const del = document.createElement("button");
+      del.className = "del"; del.textContent = "🗑";
+      del.onclick = (e) => { e.stopPropagation(); removeConversation(c.id); };
+      item.appendChild(info); item.appendChild(del);
+      item.onclick = () => openConversation(c.id);
+      listEl.appendChild(item);
+    });
+  } catch (e) {
+    listEl.innerHTML = '<div class="conv-empty">مقدرتش أحمّل المحادثات</div>';
+  }
+}
+
+function openDrawer() {
+  document.getElementById("drawer-overlay").classList.add("open");
+  refreshDrawer();
+}
+function closeDrawer() {
+  document.getElementById("drawer-overlay").classList.remove("open");
+}
+document.getElementById("menu-btn").addEventListener("click", openDrawer);
+document.getElementById("drawer-overlay").addEventListener("click", (e) => {
+  if (e.target.id === "drawer-overlay") closeDrawer();
+});
+document.getElementById("new-chat-btn").addEventListener("click", () => {
+  startNewConversation();
+  closeDrawer();
+});
+
+// عند فتح الصفحة: نكمل آخر محادثة لو موجودة، وإلا نبدأ محادثة جديدة
+(async function init() {
+  try {
+    const convs = await fetchConversations();
+    if (convs.length > 0) {
+      await openConversation(convs[0].id);
+      return;
+    }
+  } catch (e) {
+    // السيرفر مش متاح أو أول مرة: نبدأ محادثة جديدة عادي
+  }
+  startNewConversation();
+})();
+</script>
+
+</body>
+</html>
